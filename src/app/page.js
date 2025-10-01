@@ -181,7 +181,7 @@ function ControlsSidebar({
 
 function Playground() {
   const [stylePrompt, setStylePrompt] = useState(
-    "Read aloud in a warm, friendly tone"
+    "Read in a natural, conversational tone at a 1.1x pace, with clear pauses and light expressiveness, like an audiobook narration."
   );
   const [text, setText] = useState("");
   const [model, setModel] = useState("gemini-2.5-flash-preview-tts");
