@@ -302,17 +302,17 @@ function Playground() {
     }
   };
 
-  // const handleDownload = () => {
-  //   if (!audioUrl) return;
+  const handleDownload = () => {
+    if (!audioUrl) return;
 
-  //   const filename = getTimestampFilename();
-  //   const link = document.createElement("a");
-  //   link.href = audioUrl;
-  //   link.download = filename;
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-  // };
+    const filename = getTimestampFilename();
+    const link = document.createElement("a");
+    link.href = audioUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // const handleGenerateSpeech = async () => {
   //   setIsLoading(true);
