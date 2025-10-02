@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { RotateCcw, Loader2, Moon, Sun } from "lucide-react";
+import { RotateCcw, Loader2, Moon, Sun, Download } from "lucide-react";
 
 // --- HELPER FUNCTION ---
 // Creates a playable WAV file from raw API audio data
@@ -184,7 +184,7 @@ function Playground() {
     "Read in a natural, conversational tone at a 1.1x speed, with clear pauses for light expressiveness, like an audiobook narration."
   );
   const [text, setText] = useState("How are you doing today?");
-  const [model, setModel] = useState("gemini-2.5-flash-preview-tts");
+  const [model, setModel] = useState("gemini-2.5-pro-preview-tts");
   const [voice, setVoice] = useState("Puck");
   const [audioUrl, setAudioUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -234,43 +234,122 @@ function Playground() {
     { value: "Sadaltager", label: "Sadaltager – Knowledgeable" },
     { value: "Sulafat", label: "Sulafat – Warm" },
   ];
+  // Creates a sortable filename from the current date and time
+  const getTimestampFilename = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    // Format: audio_YYYY-MM-DD_HH-MM-SS.wav
+    return `audio_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.wav`;
+  };
+
+  // Triggers the browser to download the audio file with a custom filename
 
   const handleGenerateSpeech = async () => {
     setIsLoading(true);
     setError("");
     setAudioUrl("");
+
     if (!text.trim()) {
       setError("Please enter some text to generate speech.");
       setIsLoading(false);
       return;
     }
+
     try {
       const response = await fetch("/api/generate-speech", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, voice, stylePrompt, model }),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Something went wrong");
+        throw new Error(errorData.error || "Failed to generate speech.");
       }
+
       const { audioContent, mimeType } = await response.json();
       if (!audioContent || !mimeType) throw new Error("Invalid data received.");
+
       const binaryString = atob(audioContent);
       const pcmData = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         pcmData[i] = binaryString.charCodeAt(i);
       }
+
       const audioBlob = createWavFileBlob(pcmData, mimeType);
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
     } catch (err) {
       console.error("Frontend error:", err);
-      setError(err.message);
+
+      // Check if it's a network error (like being offline)
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        setError(
+          "Network Error: Cannot connect to the server. Please check your connection."
+        );
+      } else {
+        // Otherwise, show the error message from the server or a generic one
+        setError(err.message || "An unexpected error occurred.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  // const handleDownload = () => {
+  //   if (!audioUrl) return;
+
+  //   const filename = getTimestampFilename();
+  //   const link = document.createElement("a");
+  //   link.href = audioUrl;
+  //   link.download = filename;
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // };
+
+  // const handleGenerateSpeech = async () => {
+  //   setIsLoading(true);
+  //   setError("");
+  //   setAudioUrl("");
+  //   if (!text.trim()) {
+  //     setError("Please enter some text to generate speech.");
+  //     setIsLoading(false);
+  //     return;
+  //   }
+  //   try {
+  //     const response = await fetch("/api/generate-speech", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ text, voice, stylePrompt, model }),
+  //     });
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Something went wrong");
+  //     }
+  //     const { audioContent, mimeType } = await response.json();
+  //     if (!audioContent || !mimeType) throw new Error("Invalid data received.");
+  //     const binaryString = atob(audioContent);
+  //     const pcmData = new Uint8Array(binaryString.length);
+  //     for (let i = 0; i < binaryString.length; i++) {
+  //       pcmData[i] = binaryString.charCodeAt(i);
+  //     }
+  //     const audioBlob = createWavFileBlob(pcmData, mimeType);
+  //     const url = URL.createObjectURL(audioBlob);
+  //     setAudioUrl(url);
+  //   } catch (err) {
+  //     console.error("Frontend error:", err);
+  //     setError(err.message);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   return (
     <main className="mx-auto max-w-[1200px] px-4 py-6">
@@ -322,7 +401,7 @@ function Playground() {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex items-center justify-between border-t border-border px-5 py-3 min-h-[70px]">
+        {/* <CardFooter className="flex items-center justify-between border-t border-border px-5 py-3 min-h-[70px]">
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {audioUrl && (
             <div className="w-full">
@@ -331,6 +410,26 @@ function Playground() {
               </audio>
             </div>
           )}
+        </CardFooter> */}
+        <CardFooter className="flex items-center justify-between border-t border-border px-5 py-3 min-h-[70px]">
+                    {error && <p className="text-red-500 text-sm">{error}</p>} 
+                 {" "}
+          {audioUrl && (
+            <div className="w-full flex items-center gap-4">
+              <audio controls autoPlay src={audioUrl} className="flex-grow">
+                Your browser does not support the audio element.
+              </audio>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleDownload}
+                aria-label="Download audio"
+              >
+                <Download className="size-5" />
+              </Button>
+            </div>
+          )}
+                 {" "}
         </CardFooter>
       </Card>
     </main>
